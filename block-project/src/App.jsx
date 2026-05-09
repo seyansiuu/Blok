@@ -85,33 +85,7 @@ function TaskCard({ task, profile, onAccept, onDecline }) {
   );
 }
 
-export default function App() {
-  // ... other states
-  const [declinedIds, setDeclinedIds] = useState([]); // Temporary state for hidden tasks
 
-  // ... handleOnboard, handlePost
-
-  function acceptTask(id) {
-    setTasks(p => p.map(t => t.id === id ? { ...t, status: "In Progress", assignedTo: profile.name } : t));
-    showToast("Task accepted! Check your profile.");
-  }
-
-  function declineTask(id) {
-    setDeclinedIds(p => [...p, id]);
-    showToast("Task hidden from your feed.", "error");
-  }
-
-  // Filter tasks to exclude those declined by the user
-  const avail = useMemo(() => {
-    let t = tasks.filter(t => t.status === "Available" && !declinedIds.includes(t.id));
-    if (filter === "Remote") t = t.filter(t => t.locType === "Remote");
-    if (filter === "On-Site") t = t.filter(t => t.locType === "On-Site");
-    if (sortP) t = [...t].sort((a, b) => b.reward - a.reward); // Changed to b-a for Descending (higher price first)
-    return t;
-  }, [tasks, filter, sortP, declinedIds]);
-
-  
-}
 
 const lbl = { display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 };
 const inp = { width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid #e5e3dd", fontSize: 14, color: "#1a1a1a", background: "#fff", boxSizing: "border-box", fontFamily: "inherit" };
