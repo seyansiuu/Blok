@@ -156,7 +156,7 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: "system-ui,sans-serif", background: "#f8f7f4", minHeight: "100vh", color: "#1a1a1a" }}>
-      {/* Header */}
+      
       <div style={{ background: "#fff", borderBottom: "1px solid #e5e3dd", position: "sticky", top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: 480, margin: "0 auto", padding: "0 16px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0 0" }}>
@@ -185,7 +185,7 @@ export default function App() {
 
       <div style={{ maxWidth: 480, margin: "0 auto", padding: "20px 16px 80px" }}>
 
-        {/* ONBOARDING */}
+        
         {tab === "onboarding" && (
           <div>
             <div style={{ textAlign: "center", marginBottom: 32, paddingTop: 24 }}>
@@ -213,7 +213,7 @@ export default function App() {
           </div>
         )}
 
-        {/* NEED IT */}
+       
         {tab === "need_it" && profile && (
           <div>
             <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 16px" }}>Post a Task</h2>
