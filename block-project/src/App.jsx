@@ -3,366 +3,314 @@ import { useState, useEffect, useMemo } from "react";
 const CATEGORIES = ["Documentation", "Academic", "Errands", "Other"];
 const CAMPUS_SPOTS = ["Mess", "Residency", "Library", "Canteen", "Sports Complex", "Main Gate"];
 
-function useLS(key, init) {
-  const [v, sv] = useState(() => { try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : init; } catch { return init; } });
-  useEffect(() => { try { localStorage.setItem(key, JSON.stringify(v)); } catch {} }, [key, v]);
-  return [v, sv];
+// Custom hook for LocalStorage persistence
+function useLocalStorage(key, initialValue) {
+  const [value, setValue] = useState(() => {
+    try {
+      const saved = localStorage.getItem(key);
+      return saved ? JSON.parse(saved) : initialValue;
+    } catch (err) {
+      return initialValue;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (err) {
+      console.error("Storage error", err);
+    }
+  }, [key, value]);
+
+  return [value, setValue];
 }
 
-function genId() { return Math.random().toString(36).slice(2, 9); }
+const generateId = () => Math.random().toString(36).substring(2, 9);
 
-function fmtIST(iso) {
-  if (!iso) return "—";
-  try { return new Date(iso).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true }); }
-  catch { return iso; }
+function formatTime(isoString) {
+  if (!isoString) return "—";
+  return new Date(isoString).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
-function isLate(dl) { return dl && new Date() > new Date(dl); }
+function checkIsLate(deadline) {
+  return deadline && new Date() > new Date(deadline);
+}
 
-function Toast({ toast }) {
-  if (!toast) return null;
+// --- UI Components ---
+
+function Toast({ message }) {
+  if (!message) return null;
+  const isError = message.type === "error";
   return (
-    <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: toast.type === "error" ? "#dc2626" : "#1a1a1a", color: "#fff", padding: "10px 20px", borderRadius: 12, fontSize: 13, fontWeight: 500, zIndex: 200, maxWidth: 340, textAlign: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}>
-      {toast.msg}
+    <div style={{
+      position: "fixed", bottom: 30, left: "50%", transform: "translateX(-50%)",
+      background: isError ? "#e11d48" : "#334155", color: "white",
+      padding: "12px 24px", borderRadius: "8px", fontSize: "14px", zIndex: 1000
+    }}>
+      {message.text}
     </div>
   );
 }
 
-function StatusBadge({ status }) {
-  const m = { Available: ["#eff6ff", "#1d4ed8", "🔵"], "In Progress": ["#fffbeb", "#b45309", "🟡"], Done: ["#f0fdf4", "#166534", "🟢"] };
-  const [bg, fg, dot] = m[status] || m.Available;
-  return <span style={{ fontSize: 11, background: bg, color: fg, padding: "3px 10px", borderRadius: 20, fontWeight: 500 }}>{dot} {status}</span>;
-}
-
-function catStyle(cat) {
-  const m = { Documentation: ["#eff6ff", "#1e40af"], Academic: ["#f5f3ff", "#5b21b6"], Errands: ["#fffbeb", "#92400e"], Other: ["#f9fafb", "#374151"] };
-  const [bg, color] = m[cat] || m.Other;
-  return { fontSize: 11, background: bg, color, padding: "2px 8px", borderRadius: 20, fontWeight: 500 };
-}
-
-function TaskCard({ task, profile, onAccept, onDecline }) {
+function TaskCard({ task, currentUser, onAccept, onDecline }) {
+  const isOwner = task.postedBy === currentUser?.name;
+  
   return (
-    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e3dd", padding: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-            <span style={catStyle(task.category)}>{task.category}</span>
-            {task.genderSensitive && <span style={{ fontSize: 11, background: "#fdf2f8", color: "#9d174d", padding: "2px 8px", borderRadius: 20 }}>🌸 Gender-Sensitive</span>}
-            {task.locType === "Remote"
-              ? <span style={{ fontSize: 11, background: "#eff6ff", color: "#1d4ed8", padding: "2px 8px", borderRadius: 20 }}>🌐 Remote</span>
-              : <span style={{ fontSize: 11, background: "#f0fdf4", color: "#166534", padding: "2px 8px", borderRadius: 20 }}>📍 {task.location}</span>}
+    <div style={{ background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", padding: "16px", marginBottom: "12px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
+        <div>
+          <span style={{ fontSize: "11px", fontWeight: "bold", color: "#0d9488", textTransform: "uppercase" }}>{task.category}</span>
+          <h3 style={{ fontSize: "16px", margin: "4px 0" }}>{task.title}</h3>
+          <div style={{ fontSize: "12px", color: "#64748b" }}>
+            {task.locType === "Remote" ? "🌐 Remote" : `📍 ${task.location}`}
           </div>
-          <div style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.3 }}>{task.title}</div>
         </div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: "#6c47ff", flexShrink: 0 }}>₹{task.reward}</div>
+        <div style={{ fontSize: "18px", fontWeight: "bold", color: "#0f172a" }}>₹{task.reward}</div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-        <div style={{ fontSize: 12, color: "#888" }}>⏰ {fmtIST(task.deadline)} · by {task.postedBy}</div>
-        {task.postedBy !== profile?.name ? (
-          <div style={{ display: "flex", gap: 8 }}>
-            <button 
-              onClick={() => onDecline(task.id)} 
-              style={{ padding: "8px 12px", borderRadius: 8, border: "1.5px solid #fee2e2", background: "#fef2f2", color: "#ef4444", fontWeight: 600, fontSize: 12, cursor: "pointer" }}
-              title="Decline/Hide"
-            >
-              ✕
-            </button>
-            <button 
-              onClick={() => onAccept(task.id)} 
-              style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#10b981", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer" }}
-            >
-              Accept ✓
-            </button>
+      
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ fontSize: "12px", color: "#94a3b8" }}>Ends: {formatTime(task.deadline)}</div>
+        {!isOwner ? (
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button onClick={() => onDecline(task.id)} style={{ padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: "6px", cursor: "pointer" }}>Hide</button>
+            <button onClick={() => onAccept(task.id)} style={{ padding: "6px 12px", background: "#0d9488", color: "white", border: "none", borderRadius: "6px", fontWeight: "600", cursor: "pointer" }}>Accept</button>
           </div>
         ) : (
-          <span style={{ fontSize: 11, color: "#aaa", fontStyle: "italic" }}>Your post</span>
+          <span style={{ fontSize: "12px", color: "#94a3b8", fontStyle: "italic" }}>My Post</span>
         )}
       </div>
     </div>
   );
 }
 
-const lbl = { display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 };
-const inp = { width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid #e5e3dd", fontSize: 14, color: "#1a1a1a", background: "#fff", boxSizing: "border-box", fontFamily: "inherit" };
-const card = { background: "#fff", borderRadius: 14, border: "1px solid #e5e3dd", padding: 20 };
-
 export default function App() {
-  const [tab, setTab] = useState("onboarding");
-  const [tasks, setTasks] = useLS("blok_tasks_v2", []);
-  const [profile, setProfile] = useLS("blok_profile_v2", null);
-  const [declinedIds, setDeclinedIds] = useState([]); // Temporary session-based hide
-  const [ob, setOb] = useState({ name: "", priv: false, pen: false });
-  const [nf, setNf] = useState({ title: "", cat: "Academic", dl: "", reward: "", locType: "Remote", spot: "Mess", custom: "", gs: false });
-  const [filter, setFilter] = useState("All");
-  const [sortP, setSortP] = useState(false);
-  const [modal, setModal] = useState(null);
+  const [activeTab, setActiveTab] = useState("onboarding");
+  const [tasks, setTasks] = useLocalStorage("blok_tasks_v2", []);
+  const [profile, setProfile] = useLocalStorage("blok_profile_v2", null);
+  const [hiddenTaskIds, setHiddenTaskIds] = useState([]);
+  
+  // Forms
+  const [userForm, setUserForm] = useState({ name: "", agreePrivacy: false, agreePenalty: false });
+  const [taskForm, setTaskForm] = useState({ title: "", cat: "Academic", dl: "", reward: "", locType: "Remote", spot: "Mess", customLoc: "", gs: false });
+  
+  // UI State
+  const [filterType, setFilterType] = useState("All");
+  const [isSortedByPrice, setIsSortedByPrice] = useState(false);
+  const [completionModal, setCompletionModal] = useState(null);
   const [toast, setToast] = useState(null);
 
-  useEffect(() => { if (profile && tab === "onboarding") setTab("on_it"); }, [profile]);
+  useEffect(() => {
+    if (profile && activeTab === "onboarding") setActiveTab("on_it");
+  }, [profile]);
 
-  const showToast = (msg, type = "success") => { setToast({ msg, type }); setTimeout(() => setToast(null), 3200); };
+  const triggerToast = (text, type = "success") => {
+    setToast({ text, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
-  function handleOnboard() {
-    if (!ob.name.trim()) return showToast("Enter your name.", "error");
-    if (!ob.priv || !ob.pen) return showToast("Please accept both terms.", "error");
-    setProfile({ name: ob.name.trim(), trustScore: 80, joinedAt: new Date().toISOString() });
-    setTab("on_it");
-  }
+  const handleCreateProfile = () => {
+    if (!userForm.name.trim()) return triggerToast("Name is required", "error");
+    if (!userForm.agreePrivacy || !userForm.agreePenalty) return triggerToast("Accept terms first", "error");
+    
+    setProfile({ name: userForm.name.trim(), trustScore: 80, joinedAt: new Date().toISOString() });
+    setActiveTab("on_it");
+  };
 
-  function handlePost() {
-    if (!nf.title.trim() || !nf.reward || !nf.dl) return showToast("Fill all required fields.", "error");
-    const loc = nf.locType === "Remote" ? "Remote" : (nf.spot === "Other" ? nf.custom : nf.spot);
-    const task = { id: genId(), title: nf.title.trim(), category: nf.cat, deadline: nf.dl, reward: parseFloat(nf.reward), locType: nf.locType, location: loc, genderSensitive: nf.gs, postedBy: profile.name, assignedTo: null, status: "Available", postedAt: new Date().toISOString() };
-    setTasks(p => [task, ...p]);
-    setNf({ title: "", cat: "Academic", dl: "", reward: "", locType: "Remote", spot: "Mess", custom: "", gs: false });
-    showToast("Task posted! Check 'On It' to see it live.");
-    setTab("on_it");
-  }
+  const handlePostTask = () => {
+    const { title, reward, dl, locType, spot, customLoc } = taskForm;
+    if (!title || !reward || !dl) return triggerToast("Missing information", "error");
 
-  function acceptTask(id) {
-    setTasks(p => p.map(t => t.id === id ? { ...t, status: "In Progress", assignedTo: profile.name } : t));
-    showToast("Task accepted! Check your profile.");
-  }
+    const finalLocation = locType === "Remote" ? "Remote" : (spot === "Other" ? customLoc : spot);
+    
+    const newTask = {
+      id: generateId(),
+      title: title.trim(),
+      category: taskForm.cat,
+      deadline: dl,
+      reward: parseFloat(reward),
+      locType: locType,
+      location: finalLocation,
+      genderSensitive: taskForm.gs,
+      postedBy: profile.name,
+      assignedTo: null,
+      status: "Available",
+      postedAt: new Date().toISOString()
+    };
 
-  function declineTask(id) {
-    setDeclinedIds(p => [...p, id]);
-    showToast("Task hidden.", "error");
-  }
+    setTasks(prev => [newTask, ...prev]);
+    setTaskForm({ title: "", cat: "Academic", dl: "", reward: "", locType: "Remote", spot: "Mess", customLoc: "", gs: false });
+    triggerToast("Task posted successfully!");
+    setActiveTab("on_it");
+  };
 
-  function completeTask(task) {
-    const late = isLate(task.deadline);
-    const earned = late ? task.reward * 0.5 : task.reward;
-    const penalty = late ? task.reward * 0.5 : 0;
-    setTasks(p => p.map(t => t.id === task.id ? { ...t, status: "Done", completedAt: new Date().toISOString(), earned, penalty, late } : t));
-    setProfile(p => ({ ...p, trustScore: Math.min(100, p.trustScore + (late ? -2 : 3)) }));
-    setModal(null);
-    showToast(late ? `Done — 50% penalty applied. Earned ₹${earned.toFixed(2)}.` : `Completed on time! Earned ₹${earned.toFixed(2)}.`, late ? "error" : "success");
-  }
+  const acceptTask = (id) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: "In Progress", assignedTo: profile.name } : t));
+    triggerToast("Task accepted!");
+  };
 
-  const avail = useMemo(() => {
-    let t = tasks.filter(t => t.status === "Available" && !declinedIds.includes(t.id));
-    if (filter === "Remote") t = t.filter(t => t.locType === "Remote");
-    if (filter === "On-Site") t = t.filter(t => t.locType === "On-Site");
-    if (sortP) t = [...t].sort((a, b) => b.reward - a.reward);
-    return t;
-  }, [tasks, filter, sortP, declinedIds]);
+  const finalizeTask = (task) => {
+    const isLate = checkIsLate(task.deadline);
+    const finalEarnings = isLate ? task.reward * 0.5 : task.reward;
+    
+    setTasks(prev => prev.map(t => t.id === task.id ? { 
+      ...t, 
+      status: "Done", 
+      completedAt: new Date().toISOString(), 
+      earned: finalEarnings,
+      late: isLate 
+    } : t));
 
-  const myDoing = tasks.filter(t => t.assignedTo === profile?.name && t.status === "In Progress");
-  const myPosted = tasks.filter(t => t.postedBy === profile?.name);
+    setProfile(prev => ({
+      ...prev,
+      trustScore: Math.min(100, prev.trustScore + (isLate ? -5 : 5))
+    }));
 
-  const TABS = [{ k: "need_it", l: "Need It", e: "📝" }, { k: "on_it", l: "On It", e: "🎯" }, { k: "profile", l: "Profile", e: "👤" }];
+    setCompletionModal(null);
+    triggerToast(isLate ? "Late completion: 50% penalty" : "Task completed!", isLate ? "error" : "success");
+  };
 
+  const filteredTasks = useMemo(() => {
+    let list = tasks.filter(t => t.status === "Available" && !hiddenTaskIds.includes(t.id));
+    if (filterType !== "All") list = list.filter(t => t.locType === filterType);
+    if (isSortedByPrice) list = [...list].sort((a, b) => b.reward - a.reward);
+    return list;
+  }, [tasks, filterType, isSortedByPrice, hiddenTaskIds]);
+
+  // Main Layout
   return (
-    <div style={{ fontFamily: "system-ui,sans-serif", background: "#f8f7f4", minHeight: "100vh", color: "#1a1a1a" }}>
-      <div style={{ background: "#fff", borderBottom: "1px solid #e5e3dd", position: "sticky", top: 0, zIndex: 50 }}>
-        <div style={{ maxWidth: 480, margin: "0 auto", padding: "0 16px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0 0" }}>
-            <div>
-              <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.5px", color: "#6c47ff" }}>blok</span>
-              <span style={{ fontSize: 11, color: "#888", marginLeft: 6 }}>campus economy</span>
+    <div style={{ fontFamily: "Segoe UI, sans-serif", background: "#f1f5f9", minHeight: "100vh", color: "#1e293b" }}>
+      
+      {/* Navbar */}
+      {profile && (
+        <header style={{ background: "white", borderBottom: "1px solid #e2e8f0", position: "sticky", top: 0, zIndex: 10 }}>
+          <div style={{ maxWidth: "500px", margin: "0 auto", padding: "12px 16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h1 style={{ color: "#0d9488", margin: 0, fontSize: "20px" }}>Blok.</h1>
+              <div style={{ fontSize: "14px", fontWeight: "bold" }}>⭐ {profile.trustScore}</div>
             </div>
-            {profile && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#ede9fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600, color: "#6c47ff" }}>{profile.name[0].toUpperCase()}</div>
-                <span style={{ fontSize: 12, color: "#666" }}>⭐ {profile.trustScore}</span>
-              </div>
-            )}
-          </div>
-          {profile && (
-            <div style={{ display: "flex", marginTop: 12 }}>
-              {TABS.map(t => (
-                <button key={t.k} onClick={() => setTab(t.k)} style={{ flex: 1, padding: "10px 0", fontSize: 13, fontWeight: tab === t.k ? 600 : 400, background: "transparent", border: "none", cursor: "pointer", borderBottom: tab === t.k ? "2px solid #6c47ff" : "2px solid transparent", color: tab === t.k ? "#6c47ff" : "#666" }}>
-                  {t.e} {t.l}
+            <nav style={{ display: "flex", marginTop: "12px", gap: "20px" }}>
+              {["need_it", "on_it", "profile"].map(tab => (
+                <button 
+                  key={tab} 
+                  onClick={() => setActiveTab(tab)}
+                  style={{
+                    flex: 1, padding: "8px", border: "none", background: "none", cursor: "pointer",
+                    borderBottom: activeTab === tab ? "2px solid #0d9488" : "2px solid transparent",
+                    color: activeTab === tab ? "#0d9488" : "#64748b", fontWeight: "600"
+                  }}
+                >
+                  {tab.replace("_", " ").toUpperCase()}
                 </button>
               ))}
-            </div>
-          )}
-        </div>
-      </div>
+            </nav>
+          </div>
+        </header>
+      )}
 
-      <div style={{ maxWidth: 480, margin: "0 auto", padding: "20px 16px 80px" }}>
-
-        {/* ONBOARDING */}
-        {tab === "onboarding" && (
-          <div>
-            <div style={{ textAlign: "center", marginBottom: 32 }}>
-              <div style={{ fontSize: 48, marginBottom: 8 }}>🏫</div>
-              <h1 style={{ fontSize: 26, fontWeight: 700, color: "#6c47ff", margin: "0 0 8px" }}>Welcome to Blok</h1>
-              <p style={{ color: "#666", fontSize: 14, margin: 0 }}>Your campus peer-to-peer task economy</p>
+      <main style={{ maxWidth: "500px", margin: "0 auto", padding: "20px 16px" }}>
+        
+        {/* Step 1: Onboarding */}
+        {activeTab === "onboarding" && (
+          <div style={{ background: "white", padding: "24px", borderRadius: "12px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+            <h2 style={{ marginTop: 0 }}>Campus Marketplace</h2>
+            <p style={{ color: "#64748b" }}>Enter your name to start trading tasks.</p>
+            <input 
+              style={{ width: "100%", padding: "10px", margin: "10px 0", boxSizing: "border-box" }} 
+              placeholder="Your Name"
+              value={userForm.name}
+              onChange={e => setUserForm({...userForm, name: e.target.value})}
+            />
+            <div style={{ fontSize: "13px", marginTop: "10px" }}>
+              <label style={{ display: "block", marginBottom: "8px" }}>
+                <input type="checkbox" onChange={e => setUserForm({...userForm, agreePrivacy: e.target.checked})} /> I agree to keep data within campus.
+              </label>
+              <label style={{ display: "block" }}>
+                <input type="checkbox" onChange={e => setUserForm({...userForm, agreePenalty: e.target.checked})} /> I understand the 50% late penalty.
+              </label>
             </div>
-            <div style={card}>
-              <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 20px" }}>Create your account</h2>
-              <label style={lbl}>Your Name</label>
-              <input style={inp} placeholder="e.g. Arjun Sharma" value={ob.name} onChange={e => setOb(p => ({ ...p, name: e.target.value }))} onKeyDown={e => e.key === "Enter" && handleOnboard()} />
-              <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 14 }}>
-                <label style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer" }}>
-                  <input type="checkbox" checked={ob.priv} onChange={e => setOb(p => ({ ...p, priv: e.target.checked }))} style={{ marginTop: 2, accentColor: "#6c47ff", width: 16, height: 16 }} />
-                  <span style={{ fontSize: 13, color: "#444", lineHeight: 1.5 }}><strong>Privacy</strong> — My task info will only be visible to campus users.</span>
-                </label>
-                <label style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer" }}>
-                  <input type="checkbox" checked={ob.pen} onChange={e => setOb(p => ({ ...p, pen: e.target.checked }))} style={{ marginTop: 2, accentColor: "#6c47ff", width: 16, height: 16 }} />
-                  <span style={{ fontSize: 13, color: "#444", lineHeight: 1.5 }}><strong>Delay Penalty</strong> — Completing after deadline results in <strong>50% deduction</strong>.</span>
-                </label>
-              </div>
-              <button onClick={handleOnboard} style={{ width: "100%", marginTop: 20, padding: "13px 0", borderRadius: 10, border: "none", background: "#6c47ff", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Join Blok →</button>
-            </div>
+            <button 
+              onClick={handleCreateProfile}
+              style={{ width: "100%", padding: "12px", background: "#0d9488", color: "white", border: "none", borderRadius: "6px", marginTop: "20px", fontWeight: "bold" }}
+            >
+              Get Started
+            </button>
           </div>
         )}
 
-        {/* NEED IT */}
-        {tab === "need_it" && profile && (
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 16px" }}>Post a Task</h2>
-            <div style={card}>
-              <label style={lbl}>Task Name *</label>
-              <input style={inp} placeholder="e.g. Submit assignment to Prof. Sharma" value={nf.title} onChange={e => setNf(p => ({ ...p, title: e.target.value }))} />
-
-              <label style={{ ...lbl, marginTop: 16 }}>Category *</label>
-              <select style={inp} value={nf.cat} onChange={e => setNf(p => ({ ...p, cat: e.target.value }))}>
+        {/* Step 2: Post Task */}
+        {activeTab === "need_it" && (
+          <div style={{ background: "white", padding: "20px", borderRadius: "12px" }}>
+            <h3 style={{ marginTop: 0 }}>Create New Task</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <input placeholder="What do you need help with?" style={{ padding: "10px" }} value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} />
+              <select style={{ padding: "10px" }} value={taskForm.cat} onChange={e => setTaskForm({...taskForm, cat: e.target.value})}>
                 {CATEGORIES.map(c => <option key={c}>{c}</option>)}
               </select>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 16 }}>
-                <div>
-                  <label style={lbl}>Deadline (IST) *</label>
-                  <input style={inp} type="datetime-local" value={nf.dl} onChange={e => setNf(p => ({ ...p, dl: e.target.value }))} />
-                </div>
-                <div>
-                  <label style={lbl}>Reward (₹) *</label>
-                  <input style={inp} type="number" min="1" placeholder="50" value={nf.reward} onChange={e => setNf(p => ({ ...p, reward: e.target.value }))} />
-                </div>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <input type="datetime-local" style={{ flex: 1, padding: "10px" }} value={taskForm.dl} onChange={e => setTaskForm({...taskForm, dl: e.target.value})} />
+                <input type="number" placeholder="Reward ₹" style={{ width: "100px", padding: "10px" }} value={taskForm.reward} onChange={e => setTaskForm({...taskForm, reward: e.target.value})} />
               </div>
-
-              <label style={{ ...lbl, marginTop: 16 }}>Location</label>
-              <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                {["Remote", "On-Site"].map(lt => (
-                  <button key={lt} onClick={() => setNf(p => ({ ...p, locType: lt }))} style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: `1.5px solid ${nf.locType === lt ? "#6c47ff" : "#ddd"}`, background: nf.locType === lt ? "#ede9fe" : "#fff", color: nf.locType === lt ? "#6c47ff" : "#666", fontWeight: nf.locType === lt ? 600 : 400, fontSize: 13, cursor: "pointer" }}>
-                    {lt === "Remote" ? "🌐 Remote" : "📍 On-Site"}
-                  </button>
-                ))}
-              </div>
-              {nf.locType === "On-Site" && (
-                <div>
-                  <select style={inp} value={nf.spot} onChange={e => setNf(p => ({ ...p, spot: e.target.value }))}>
-                    {CAMPUS_SPOTS.map(s => <option key={s}>{s}</option>)}
-                    <option value="Other">Other</option>
-                  </select>
-                  {nf.spot === "Other" && <input style={{ ...inp, marginTop: 8 }} placeholder="Describe the location" value={nf.custom} onChange={e => setNf(p => ({ ...p, custom: e.target.value }))} />}
-                </div>
-              )}
-
-              <label style={{ display: "flex", gap: 10, alignItems: "center", cursor: "pointer", marginTop: 16 }}>
-                <input type="checkbox" checked={nf.gs} onChange={e => setNf(p => ({ ...p, gs: e.target.checked }))} style={{ accentColor: "#6c47ff", width: 16, height: 16 }} />
-                <span style={{ fontSize: 13, color: "#555" }}>🌸 Mark as Gender-Sensitive Task</span>
-              </label>
-
-              <button onClick={handlePost} style={{ width: "100%", marginTop: 20, padding: "13px 0", borderRadius: 10, border: "none", background: "#6c47ff", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Post Task →</button>
+              <button onClick={handlePostTask} style={{ background: "#0d9488", color: "white", padding: "12px", border: "none", borderRadius: "6px", fontWeight: "bold" }}>Post Task</button>
             </div>
           </div>
         )}
 
-        {/* ON IT */}
-        {tab === "on_it" && profile && (
+        {/* Step 3: Browse Tasks */}
+        {activeTab === "on_it" && (
           <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Available Tasks</h2>
-              <span style={{ fontSize: 12, color: "#888" }}>{avail.length} total</span>
-            </div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
               {["All", "Remote", "On-Site"].map(f => (
-                <button key={f} onClick={() => setFilter(f)} style={{ padding: "6px 14px", borderRadius: 20, border: `1.5px solid ${filter === f ? "#6c47ff" : "#ddd"}`, background: filter === f ? "#ede9fe" : "#fff", color: filter === f ? "#6c47ff" : "#666", fontSize: 13, fontWeight: filter === f ? 600 : 400, cursor: "pointer" }}>{f}</button>
+                <button key={f} onClick={() => setFilterType(f)} style={{ padding: "6px 12px", borderRadius: "20px", border: "1px solid #cbd5e1", background: filterType === f ? "#0d9488" : "white", color: filterType === f ? "white" : "#64748b" }}>{f}</button>
               ))}
-              <button onClick={() => setSortP(p => !p)} style={{ padding: "6px 14px", borderRadius: 20, border: `1.5px solid ${sortP ? "#059669" : "#ddd"}`, background: sortP ? "#ecfdf5" : "#fff", color: sortP ? "#059669" : "#666", fontSize: 13, fontWeight: sortP ? 600 : 400, cursor: "pointer", marginLeft: "auto" }}>
-                💰 {sortP ? "High Rewards" : "Sort Price"}
-              </button>
             </div>
-            {avail.length === 0
-              ? <div style={{ textAlign: "center", padding: "48px 0", color: "#aaa" }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
-                  <p style={{ margin: 0, fontSize: 14 }}>No tasks available right now</p>
-                </div>
-              : <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {avail.map(t => <TaskCard key={t.id} task={t} profile={profile} onAccept={acceptTask} onDecline={declineTask} />)}
-                </div>}
+            {filteredTasks.map(t => (
+              <TaskCard key={t.id} task={t} currentUser={profile} onAccept={acceptTask} onDecline={(id) => setHiddenTaskIds([...hiddenTaskIds, id])} />
+            ))}
           </div>
         )}
 
-        {/* PROFILE */}
-        {tab === "profile" && profile && (
+        {/* Step 4: Profile & Progress */}
+        {activeTab === "profile" && (
           <div>
-            <div style={{ ...card, marginBottom: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#ede9fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: "#6c47ff" }}>{profile.name[0].toUpperCase()}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 18 }}>{profile.name}</div>
-                  <div style={{ fontSize: 12, color: "#888" }}>Member since {fmtIST(profile.joinedAt)}</div>
-                </div>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: profile.trustScore >= 70 ? "#059669" : profile.trustScore >= 40 ? "#d97706" : "#dc2626" }}>{profile.trustScore}</div>
-                  <div style={{ fontSize: 11, color: "#888" }}>Trust Score</div>
-                </div>
-              </div>
+            <div style={{ background: "white", padding: "20px", borderRadius: "12px", marginBottom: "20px" }}>
+              <h2 style={{ margin: 0 }}>{profile.name}</h2>
+              <p style={{ color: "#64748b", margin: "5px 0" }}>Campus Trust Score: {profile.trustScore}/100</p>
             </div>
 
-            {myDoing.length > 0 && (
-              <div style={{ marginBottom: 24 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, color: "#444", margin: "0 0 10px" }}>🔧 Tasks I'm Doing</h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {myDoing.map(t => (
-                    <div key={t.id} style={{ ...card, padding: "14px 16px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <div style={{ fontWeight: 500, fontSize: 14 }}>{t.title}</div>
-                        <div style={{ fontWeight: 700, color: "#6c47ff" }}>₹{t.reward}</div>
-                      </div>
-                      <button onClick={() => setModal(t)} style={{ marginTop: 12, width: "100%", padding: "8px 0", borderRadius: 8, background: isLate(t.deadline) ? "#fef2f2" : "#ecfdf5", border: `1.5px solid ${isLate(t.deadline) ? "#fca5a5" : "#6ee7b7"}`, color: isLate(t.deadline) ? "#dc2626" : "#059669", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
-                        {isLate(t.deadline) ? "⚠️ Complete (Penalty)" : "✅ Mark Complete"}
-                      </button>
-                    </div>
-                  ))}
+            <h4 style={{ color: "#475569" }}>Active Tasks</h4>
+            {tasks.filter(t => t.assignedTo === profile.name && t.status === "In Progress").map(t => (
+              <div key={t.id} style={{ background: "white", padding: "15px", borderRadius: "10px", borderLeft: "4px solid #0d9488", marginBottom: "10px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>{t.title}</span>
+                  <button onClick={() => setCompletionModal(t)} style={{ background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "4px", padding: "4px 8px" }}>Finish</button>
                 </div>
               </div>
-            )}
-
-            {myPosted.length > 0 && (
-              <div>
-                <h3 style={{ fontSize: 14, fontWeight: 600, color: "#444", margin: "0 0 10px" }}>📋 My Posts</h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {myPosted.map(t => (
-                    <div key={t.id} style={{ ...card, padding: "14px 16px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div>
-                          <div style={{ fontWeight: 500, fontSize: 14 }}>{t.title}</div>
-                          {t.assignedTo && t.status !== "Done" && <div style={{ fontSize: 11, color: "#059669" }}>Accepted by {t.assignedTo}</div>}
-                        </div>
-                        <StatusBadge status={t.status} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            ))}
           </div>
         )}
-      </div>
+      </main>
 
-      {/* COMPLETE MODAL */}
-      {modal && (
-        <div onClick={e => e.target === e.currentTarget && setModal(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 100 }}>
-          <div style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: 24, width: "100%", maxWidth: 480, margin: "0 auto" }}>
-            <h3 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 16px" }}>Complete Task</h3>
-            <div style={{ background: "#f8f7f4", borderRadius: 10, padding: 14, marginBottom: 20 }}>
-              <div style={{ fontWeight: 500, fontSize: 14 }}>{modal.title}</div>
-              <div style={{ fontSize: 13, marginTop: 8 }}>{isLate(modal.deadline) ? `Penalty Applied: ₹${(modal.reward * 0.5).toFixed(2)}` : `Reward: ₹${modal.reward}`}</div>
-            </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setModal(null)} style={{ flex: 1, padding: "12px 0", borderRadius: 10, border: "1.5px solid #ddd", background: "#fff", fontWeight: 500, cursor: "pointer" }}>Cancel</button>
-              <button onClick={() => completeTask(modal)} style={{ flex: 2, padding: "12px 0", borderRadius: 10, border: "none", background: "#6c47ff", color: "#fff", fontWeight: 600, cursor: "pointer" }}>Confirm</button>
+      {/* Completion Modal */}
+      {completionModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+          <div style={{ background: "white", padding: "20px", borderRadius: "12px", width: "100%", maxWidth: "400px" }}>
+            <h3>Confirm Completion</h3>
+            <p>Did you finish "{completionModal.title}"?</p>
+            <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
+              <button onClick={() => setCompletionModal(null)} style={{ flex: 1, padding: "10px" }}>Cancel</button>
+              <button onClick={() => finalizeTask(completionModal)} style={{ flex: 1, padding: "10px", background: "#0d9488", color: "white", border: "none" }}>Yes, Done</button>
             </div>
           </div>
         </div>
       )}
 
-      <Toast toast={toast} />
+      <Toast message={toast} />
     </div>
   );
 }
