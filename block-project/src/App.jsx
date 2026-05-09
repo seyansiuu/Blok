@@ -40,7 +40,9 @@ function catStyle(cat) {
   return { fontSize: 11, background: bg, color, padding: "2px 8px", borderRadius: 20, fontWeight: 500 };
 }
 
-function TaskCard({ task, profile, onAccept }) {
+// ... keep other imports and helper functions (useLS, genId, fmtIST, etc.) same
+
+function TaskCard({ task, profile, onAccept, onDecline }) {
   return (
     <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e3dd", padding: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
@@ -56,14 +58,59 @@ function TaskCard({ task, profile, onAccept }) {
         </div>
         <div style={{ fontSize: 20, fontWeight: 800, color: "#6c47ff", flexShrink: 0 }}>₹{task.reward}</div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+      
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 4 }}>
         <div style={{ fontSize: 12, color: "#888" }}>⏰ {fmtIST(task.deadline)} · by {task.postedBy}</div>
-        {task.postedBy !== profile?.name
-          ? <button onClick={() => onAccept(task.id)} style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: "#6c47ff", color: "#fff", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>Accept →</button>
-          : <span style={{ fontSize: 11, color: "#aaa" }}>Your post</span>}
+        
+        {task.postedBy !== profile?.name ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button 
+              onClick={() => onDecline(task.id)} 
+              style={{ padding: "8px 12px", borderRadius: 8, border: "1.5px solid #fee2e2", background: "#fef2f2", color: "#ef4444", fontWeight: 600, fontSize: 12, cursor: "pointer" }}
+            >
+              ✕
+            </button>
+            <button 
+              onClick={() => onAccept(task.id)} 
+              style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#10b981", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+            >
+              Accept ✓
+            </button>
+          </div>
+        ) : (
+          <span style={{ fontSize: 11, color: "#aaa", fontStyle: "italic" }}>Your post</span>
+        )}
       </div>
     </div>
   );
+}
+
+export default function App() {
+  // ... other states
+  const [declinedIds, setDeclinedIds] = useState([]); // Temporary state for hidden tasks
+
+  // ... handleOnboard, handlePost
+
+  function acceptTask(id) {
+    setTasks(p => p.map(t => t.id === id ? { ...t, status: "In Progress", assignedTo: profile.name } : t));
+    showToast("Task accepted! Check your profile.");
+  }
+
+  function declineTask(id) {
+    setDeclinedIds(p => [...p, id]);
+    showToast("Task hidden from your feed.", "error");
+  }
+
+  // Filter tasks to exclude those declined by the user
+  const avail = useMemo(() => {
+    let t = tasks.filter(t => t.status === "Available" && !declinedIds.includes(t.id));
+    if (filter === "Remote") t = t.filter(t => t.locType === "Remote");
+    if (filter === "On-Site") t = t.filter(t => t.locType === "On-Site");
+    if (sortP) t = [...t].sort((a, b) => b.reward - a.reward); // Changed to b-a for Descending (higher price first)
+    return t;
+  }, [tasks, filter, sortP, declinedIds]);
+
+  
 }
 
 const lbl = { display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 };
