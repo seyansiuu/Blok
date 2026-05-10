@@ -19,80 +19,207 @@ function fmtIST(iso) {
 
 function isLate(dl) { return dl && new Date() > new Date(dl); }
 
+const C = {
+  bg:           "#0D0D0F",
+  surface:      "#141417",
+  surfaceRaise: "#1C1C21",
+  border:       "#2A2A31",
+  borderBright: "#3A3A44",
+  accent:       "#00E5C3",
+  accentDim:    "#00C4A8",
+  accentBg:     "#001F1A",
+  accentBorder: "#00443A",
+  text:         "#F0F0F4",
+  textMuted:    "#8888A0",
+  textFaint:    "#55555F",
+  red:          "#FF4D5E",
+  redBg:        "#1A0A0C",
+  redBorder:    "#3D1219",
+  green:        "#00D68F",
+  greenBg:      "#001A10",
+  greenBorder:  "#00402A",
+  amber:        "#FFB547",
+  cat: {
+    Documentation: { bg: "#0F1425", color: "#7B9EFF" },
+    Academic:      { bg: "#160F25", color: "#B57BFF" },
+    Errands:       { bg: "#1A1005", color: "#FFB547" },
+    Other:         { bg: "#151519", color: "#8888A0" },
+  }
+};
+
+const inp = {
+  width: "100%", padding: "10px 13px", borderRadius: 9,
+  border: `1px solid ${C.border}`, fontSize: 14, color: C.text,
+  background: C.surfaceRaise, boxSizing: "border-box",
+  fontFamily: "inherit", outline: "none",
+};
+
+const lbl = {
+  display: "block", fontSize: 10, fontWeight: 600,
+  color: C.textFaint, marginBottom: 7,
+  textTransform: "uppercase", letterSpacing: "0.1em",
+};
+
+const cardStyle = {
+  background: C.surface,
+  borderRadius: 14,
+  border: `1px solid ${C.border}`,
+  padding: "18px 20px",
+};
+
+function BlokLogo() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{
+        width: 30, height: 30, borderRadius: 9,
+        background: C.accent,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        flexShrink: 0,
+      }}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect x="2" y="2" width="5" height="5" rx="1.5" fill="#001F1A"/>
+          <rect x="9" y="2" width="5" height="5" rx="1.5" fill="#001F1A"/>
+          <rect x="3" y="9" width="5" height="5" rx="1.5" fill="#001F1A"/>
+          <rect x="9" y="9" width="5" height="5" rx="1.5" fill="#001F1A" opacity="0.35"/>
+        </svg>
+      </div>
+      <div>
+        <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.6px", color: C.text }}>blok</span>
+        <span style={{ fontSize: 10, color: C.textFaint, marginLeft: 5, letterSpacing: "0.08em", fontWeight: 400 }}>campus economy</span>
+      </div>
+    </div>
+  );
+}
+
 function Toast({ toast }) {
   if (!toast) return null;
   return (
-    <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: toast.type === "error" ? "#dc2626" : "#1a1a1a", color: "#fff", padding: "10px 20px", borderRadius: 12, fontSize: 13, fontWeight: 500, zIndex: 200, maxWidth: 340, textAlign: "center" }}>
+    <div style={{
+      position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)",
+      background: toast.type === "error" ? C.redBg : C.accentBg,
+      color: toast.type === "error" ? C.red : C.accent,
+      border: `1px solid ${toast.type === "error" ? C.redBorder : C.accentBorder}`,
+      padding: "10px 18px", borderRadius: 10,
+      fontSize: 13, fontWeight: 500, zIndex: 200, maxWidth: 320,
+      textAlign: "center",
+    }}>
       {toast.msg}
     </div>
   );
 }
 
-function StatusBadge({ status }) {
+function Pill({ children, style }) {
+  return (
+    <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 6, letterSpacing: "0.02em", ...style }}>
+      {children}
+    </span>
+  );
+}
+
+function CatPill({ cat }) {
+  const s = C.cat[cat] || C.cat.Other;
+  return <Pill style={{ background: s.bg, color: s.color }}>{cat}</Pill>;
+}
+
+function StatusDot({ status }) {
   const m = {
-    Available: { bg: "#eff6ff", color: "#1d4ed8", dot: "#3b82f6" },
-    "In Progress": { bg: "#fffbeb", color: "#b45309", dot: "#f59e0b" },
-    Done: { bg: "#f0fdf4", color: "#166534", dot: "#22c55e" },
-    Denied: { bg: "#fef2f2", color: "#991b1b", dot: "#ef4444" },
+    Available:     { color: C.accent },
+    "In Progress": { color: C.amber },
+    Done:          { color: "#7B9EFF" },
+    Denied:        { color: C.red },
   };
   const s = m[status] || m.Available;
   return (
-    <span style={{ fontSize: 11, background: s.bg, color: s.color, padding: "3px 10px", borderRadius: 20, fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 5 }}>
-      <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.dot, display: "inline-block" }} />
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: C.textMuted }}>
+      <span style={{ width: 5, height: 5, borderRadius: "50%", background: s.color, display: "inline-block" }} />
       {status}
     </span>
   );
 }
 
-function catStyle(cat) {
-  const m = { Documentation: ["#eff6ff", "#1e40af"], Academic: ["#f5f3ff", "#5b21b6"], Errands: ["#fffbeb", "#92400e"], Other: ["#f9fafb", "#374151"] };
-  const [bg, color] = m[cat] || m.Other;
-  return { fontSize: 11, background: bg, color, padding: "2px 8px", borderRadius: 20, fontWeight: 500 };
+function PrimaryBtn({ onClick, children, style }) {
+  return (
+    <button onClick={onClick} style={{
+      padding: "11px 0", borderRadius: 10, border: "none",
+      background: C.accent, color: C.accentBg,
+      fontWeight: 700, fontSize: 14, cursor: "pointer",
+      fontFamily: "inherit", ...style
+    }}>{children}</button>
+  );
 }
 
 function TaskCard({ task, profile, onAccept, onDeny }) {
+  const mine = task.postedBy === profile?.name;
   return (
-    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e3dd", padding: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
+    <div style={{ background: C.surface, borderRadius: 14, border: `1px solid ${C.border}`, padding: "16px 18px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-            <span style={catStyle(task.category)}>{task.category}</span>
-            {task.genderSensitive && <span style={{ fontSize: 11, background: "#fdf2f8", color: "#9d174d", padding: "2px 8px", borderRadius: 20 }}>Gender-Sensitive</span>}
+          <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 8, alignItems: "center" }}>
+            <CatPill cat={task.category} />
+            {task.genderSensitive && <Pill style={{ background: "#1A0F1A", color: "#D478C4" }}>Gender-Sensitive</Pill>}
             {task.locType === "Remote"
-              ? <span style={{ fontSize: 11, background: "#eff6ff", color: "#1d4ed8", padding: "2px 8px", borderRadius: 20 }}>Remote</span>
-              : <span style={{ fontSize: 11, background: "#f0fdf4", color: "#166534", padding: "2px 8px", borderRadius: 20 }}>{task.location}</span>}
+              ? <Pill style={{ background: C.accentBg, color: C.accent }}>Remote</Pill>
+              : <Pill style={{ background: C.greenBg, color: C.green }}>{task.location}</Pill>}
           </div>
-          <div style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.4 }}>{task.title}</div>
+          <div style={{ fontWeight: 600, fontSize: 14.5, lineHeight: 1.45, color: C.text }}>{task.title}</div>
         </div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: "#6c47ff", flexShrink: 0 }}>&#8377;{task.reward}</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: C.accent, flexShrink: 0, letterSpacing: "-0.5px" }}>
+          ₹{task.reward}
+        </div>
       </div>
-      <div style={{ fontSize: 12, color: "#888", marginBottom: 12 }}>Due {fmtIST(task.deadline)} &middot; Posted by {task.postedBy}</div>
-      {task.postedBy !== profile?.name ? (
+      <div style={{ fontSize: 12, color: C.textFaint, marginBottom: 13 }}>
+        Due {fmtIST(task.deadline)} · {task.postedBy}
+      </div>
+      {!mine ? (
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => onAccept(task.id)} style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none", background: "#6c47ff", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
-            Accept
-          </button>
-          <button onClick={() => onDeny(task.id)} style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "1.5px solid #fca5a5", background: "#fef2f2", color: "#dc2626", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
-            Deny
-          </button>
+          <button onClick={() => onAccept(task.id)} style={{
+            flex: 1, padding: "8px 0", borderRadius: 8, border: "none",
+            background: C.accent, color: C.accentBg, fontWeight: 700, fontSize: 13,
+            cursor: "pointer", fontFamily: "inherit"
+          }}>Accept</button>
+          <button onClick={() => onDeny(task.id)} style={{
+            flex: 1, padding: "8px 0", borderRadius: 8,
+            border: `1px solid ${C.redBorder}`, background: C.redBg,
+            color: C.red, fontWeight: 500, fontSize: 13, cursor: "pointer", fontFamily: "inherit"
+          }}>Decline</button>
         </div>
       ) : (
-        <div style={{ padding: "8px 12px", background: "#f8f7f4", borderRadius: 8, fontSize: 12, color: "#aaa", textAlign: "center" }}>
-          Your post — visible to others
-        </div>
+        <div style={{
+          padding: "7px 12px", background: C.surfaceRaise, borderRadius: 8,
+          fontSize: 12, color: C.textFaint, textAlign: "center", border: `1px solid ${C.border}`
+        }}>Your post</div>
       )}
     </div>
   );
 }
 
-const lbl = { display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 };
-const inp = { width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid #e5e3dd", fontSize: 14, color: "#1a1a1a", background: "#fff", boxSizing: "border-box", fontFamily: "inherit" };
-const card = { background: "#fff", borderRadius: 14, border: "1px solid #e5e3dd", padding: 20 };
+function Section({ title, children }) {
+  return (
+    <div style={{ marginBottom: 26 }}>
+      <div style={{ fontSize: 10, fontWeight: 600, color: C.textFaint, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 11 }}>
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function FilterChip({ label, active, onClick, activeColor, activeBg, activeBorder }) {
+  return (
+    <button onClick={onClick} style={{
+      padding: "5px 13px", borderRadius: 7,
+      border: `1px solid ${active ? (activeBorder || C.accentBorder) : C.border}`,
+      background: active ? (activeBg || C.accentBg) : C.surfaceRaise,
+      color: active ? (activeColor || C.accent) : C.textMuted,
+      fontSize: 12, fontWeight: active ? 600 : 400, cursor: "pointer", fontFamily: "inherit",
+    }}>{label}</button>
+  );
+}
 
 export default function App() {
   const [tab, setTab] = useState("onboarding");
-  const [tasks, setTasks] = useLS("blok_tasks_v3", []);
-  const [profile, setProfile] = useLS("blok_profile_v3", null);
+  const [tasks, setTasks] = useLS("blok_tasks_v5", []);
+  const [profile, setProfile] = useLS("blok_profile_v5", null);
   const [ob, setOb] = useState({ name: "", priv: false, pen: false });
   const [nf, setNf] = useState({ title: "", cat: "Academic", dl: "", reward: "", locType: "Remote", spot: "Mess", custom: "", gs: false });
   const [filter, setFilter] = useState("All");
@@ -114,21 +241,27 @@ export default function App() {
   function handlePost() {
     if (!nf.title.trim() || !nf.reward || !nf.dl) return showToast("Fill all required fields.", "error");
     const loc = nf.locType === "Remote" ? "Remote" : (nf.spot === "Other" ? nf.custom : nf.spot);
-    const task = { id: genId(), title: nf.title.trim(), category: nf.cat, deadline: nf.dl, reward: parseFloat(nf.reward), locType: nf.locType, location: loc, genderSensitive: nf.gs, postedBy: profile.name, assignedTo: null, status: "Available", postedAt: new Date().toISOString() };
+    const task = {
+      id: genId(), title: nf.title.trim(), category: nf.cat,
+      deadline: nf.dl, reward: parseFloat(nf.reward),
+      locType: nf.locType, location: loc,
+      genderSensitive: nf.gs, postedBy: profile.name,
+      assignedTo: null, status: "Available", postedAt: new Date().toISOString()
+    };
     setTasks(p => [task, ...p]);
     setNf({ title: "", cat: "Academic", dl: "", reward: "", locType: "Remote", spot: "Mess", custom: "", gs: false });
-    showToast("Task posted — now live in On It.");
+    showToast("Task posted — now live.");
     setTab("on_it");
   }
 
   function acceptTask(id) {
     setTasks(p => p.map(t => t.id === id ? { ...t, status: "In Progress", assignedTo: profile.name } : t));
-    showToast("Task accepted — check your profile to track it.");
+    showToast("Task accepted.");
   }
 
   function denyTask(id) {
     setTasks(p => p.map(t => t.id === id ? { ...t, status: "Denied", deniedBy: profile.name, deniedAt: new Date().toISOString() } : t));
-    showToast("Task denied and removed from the feed.", "error");
+    showToast("Task declined.", "error");
   }
 
   function completeTask(task) {
@@ -138,7 +271,7 @@ export default function App() {
     setTasks(p => p.map(t => t.id === task.id ? { ...t, status: "Done", completedAt: new Date().toISOString(), earned, penalty, late } : t));
     setProfile(p => ({ ...p, trustScore: Math.min(100, p.trustScore + (late ? -2 : 3)) }));
     setModal(null);
-    showToast(late ? `Done — penalty applied. Earned &#8377;${earned.toFixed(2)}.` : `Completed on time. Earned &#8377;${earned.toFixed(2)}.`, late ? "error" : "success");
+    showToast(late ? `Done. Earned ₹${earned.toFixed(2)} after penalty.` : `Completed. Earned ₹${earned.toFixed(2)}.`, late ? "error" : "success");
   }
 
   const avail = useMemo(() => {
@@ -151,266 +284,342 @@ export default function App() {
 
   const myDoing = tasks.filter(t => t.assignedTo === profile?.name && t.status === "In Progress");
   const myPosted = tasks.filter(t => t.postedBy === profile?.name);
-
-  const TABS = [{ k: "need_it", l: "Need It" }, { k: "on_it", l: "On It" }, { k: "profile", l: "Profile" }];
+  const TABS = [{ k: "need_it", l: "Post" }, { k: "on_it", l: "Browse" }, { k: "profile", l: "Profile" }];
+  const trustColor = profile?.trustScore >= 70 ? C.green : profile?.trustScore >= 40 ? C.amber : C.red;
 
   return (
-    <div style={{ fontFamily: "system-ui,sans-serif", background: "#f8f7f4", minHeight: "100vh", color: "#1a1a1a" }}>
-      
-      <div style={{ background: "#fff", borderBottom: "1px solid #e5e3dd", position: "sticky", top: 0, zIndex: 50 }}>
-        <div style={{ maxWidth: 480, margin: "0 auto", padding: "0 16px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0 0" }}>
-            <div>
-              <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.5px", color: "#6c47ff" }}>blok</span>
-              <span style={{ fontSize: 11, color: "#aaa", marginLeft: 6 }}>campus economy</span>
-            </div>
+    <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: C.bg, minHeight: "100vh", color: C.text }}>
+
+      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0, zIndex: 50 }}>
+        <div style={{ maxWidth: 480, margin: "0 auto", padding: "0 20px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 0 0" }}>
+            <BlokLogo />
             {profile && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#ede9fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600, color: "#6c47ff" }}>{profile.name[0].toUpperCase()}</div>
-                <span style={{ fontSize: 12, color: "#666" }}>Trust {profile.trustScore}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 11, color: C.textFaint }}>
+                  Trust <strong style={{ color: trustColor, fontWeight: 600 }}>{profile.trustScore}</strong>
+                </span>
+                <div style={{
+                  width: 30, height: 30, borderRadius: "50%",
+                  background: C.accentBg, border: `1px solid ${C.accentBorder}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 12, fontWeight: 700, color: C.accent
+                }}>{profile.name[0].toUpperCase()}</div>
               </div>
             )}
           </div>
           {profile && (
             <div style={{ display: "flex", marginTop: 12 }}>
               {TABS.map(t => (
-                <button key={t.k} onClick={() => setTab(t.k)} style={{ flex: 1, padding: "10px 0", fontSize: 13, fontWeight: tab === t.k ? 600 : 400, background: "transparent", border: "none", cursor: "pointer", borderBottom: tab === t.k ? "2px solid #6c47ff" : "2px solid transparent", color: tab === t.k ? "#6c47ff" : "#666" }}>
-                  {t.l}
-                </button>
+                <button key={t.k} onClick={() => setTab(t.k)} style={{
+                  flex: 1, padding: "9px 0", fontSize: 13,
+                  fontWeight: tab === t.k ? 600 : 400,
+                  background: "transparent", border: "none", cursor: "pointer",
+                  borderBottom: tab === t.k ? `2px solid ${C.accent}` : "2px solid transparent",
+                  color: tab === t.k ? C.accent : C.textMuted,
+                  fontFamily: "inherit",
+                }}>{t.l}</button>
               ))}
             </div>
           )}
         </div>
       </div>
 
-      <div style={{ maxWidth: 480, margin: "0 auto", padding: "20px 16px 80px" }}>
+      <div style={{ maxWidth: 480, margin: "0 auto", padding: "24px 20px 80px" }}>
 
-        
         {tab === "onboarding" && (
           <div>
-            <div style={{ textAlign: "center", marginBottom: 32, paddingTop: 24 }}>
-              <div style={{ width: 64, height: 64, borderRadius: 16, background: "#ede9fe", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 28, fontWeight: 700, color: "#6c47ff" }}>B</div>
-              <h1 style={{ fontSize: 26, fontWeight: 700, color: "#6c47ff", margin: "0 0 8px" }}>Welcome to Blok</h1>
-              <p style={{ color: "#666", fontSize: 14, margin: 0 }}>Your campus peer-to-peer task economy</p>
-            </div>
-            <div style={card}>
-              <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 20px" }}>Create your account</h2>
-              <label style={lbl}>Your Name</label>
-              <input style={inp} placeholder="e.g. Arjun Sharma" value={ob.name} onChange={e => setOb(p => ({ ...p, name: e.target.value }))} onKeyDown={e => e.key === "Enter" && handleOnboard()} />
-              <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 14 }}>
-                <label style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer" }}>
-                  <input type="checkbox" checked={ob.priv} onChange={e => setOb(p => ({ ...p, priv: e.target.checked }))} style={{ marginTop: 2, accentColor: "#6c47ff", width: 16, height: 16, flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, color: "#444", lineHeight: 1.6 }}><strong>Maintenance of Privacy</strong> — My task info will only be visible to campus users and will not be shared externally.</span>
-                </label>
-                <label style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer" }}>
-                  <input type="checkbox" checked={ob.pen} onChange={e => setOb(p => ({ ...p, pen: e.target.checked }))} style={{ marginTop: 2, accentColor: "#6c47ff", width: 16, height: 16, flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, color: "#444", lineHeight: 1.6 }}><strong>Acceptance of Delay Penalty</strong> — Completing a task after its deadline results in a <strong>50% deduction</strong> of the agreed reward.</span>
-                </label>
+            <div style={{ textAlign: "center", marginBottom: 36, paddingTop: 16 }}>
+              <div style={{
+                width: 60, height: 60, borderRadius: 18, background: C.accent,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                margin: "0 auto 20px",
+              }}>
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                  <rect x="3" y="3" width="9" height="9" rx="2.5" fill={C.accentBg}/>
+                  <rect x="16" y="3" width="9" height="9" rx="2.5" fill={C.accentBg}/>
+                  <rect x="3" y="16" width="9" height="9" rx="2.5" fill={C.accentBg}/>
+                  <rect x="16" y="16" width="9" height="9" rx="2.5" fill={C.accentBg} opacity="0.35"/>
+                </svg>
               </div>
-              <button onClick={handleOnboard} style={{ width: "100%", marginTop: 20, padding: "13px 0", borderRadius: 10, border: "none", background: "#6c47ff", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Join Blok</button>
+              <h1 style={{ fontSize: 26, fontWeight: 700, color: C.text, margin: "0 0 8px", letterSpacing: "-0.7px" }}>
+                Welcome to Blok
+              </h1>
+              <p style={{ color: C.textMuted, fontSize: 14, margin: 0, lineHeight: 1.6 }}>Campus peer-to-peer task economy</p>
             </div>
-            <p style={{ textAlign: "center", fontSize: 12, color: "#bbb", marginTop: 16 }}>No external accounts needed. All data stays on your device.</p>
+
+            <div style={cardStyle}>
+              <label style={lbl}>Your Name</label>
+              <input style={inp} placeholder="e.g. Arjun Sharma" value={ob.name}
+                onChange={e => setOb(p => ({ ...p, name: e.target.value }))}
+                onKeyDown={e => e.key === "Enter" && handleOnboard()} />
+
+              <div style={{ marginTop: 22, display: "flex", flexDirection: "column", gap: 10 }}>
+                {[
+                  { key: "priv", title: "Privacy agreement", desc: "Task info is only visible to campus users — never shared externally." },
+                  { key: "pen",  title: "Delay penalty",     desc: "Completing after deadline results in a 50% reward deduction." },
+                ].map(({ key, title, desc }) => (
+                  <label key={key} style={{
+                    display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer",
+                    padding: "12px 14px", borderRadius: 10,
+                    background: ob[key] ? C.accentBg : C.surfaceRaise,
+                    border: `1px solid ${ob[key] ? C.accentBorder : C.border}`,
+                  }}>
+                    <input type="checkbox" checked={ob[key]}
+                      onChange={e => setOb(p => ({ ...p, [key]: e.target.checked }))}
+                      style={{ marginTop: 2, accentColor: C.accent, width: 15, height: 15, flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.6 }}>
+                      <span style={{ fontWeight: 600, color: C.text }}>{title}</span> — {desc}
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              <PrimaryBtn onClick={handleOnboard} style={{ width: "100%", marginTop: 20 }}>
+                Create account →
+              </PrimaryBtn>
+            </div>
+            <p style={{ textAlign: "center", fontSize: 11, color: C.textFaint, marginTop: 16 }}>All data stays on your device.</p>
           </div>
         )}
 
-       
         {tab === "need_it" && profile && (
           <div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 16px" }}>Post a Task</h2>
-            <div style={card}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 20px", letterSpacing: "-0.4px" }}>Post a Task</h2>
+            <div style={cardStyle}>
               <label style={lbl}>Task Name *</label>
-              <input style={inp} placeholder="e.g. Submit assignment to Prof. Sharma's cabin" value={nf.title} onChange={e => setNf(p => ({ ...p, title: e.target.value }))} />
+              <input style={inp} placeholder="e.g. Submit assignment to Prof. Sharma's cabin"
+                value={nf.title} onChange={e => setNf(p => ({ ...p, title: e.target.value }))} />
 
-              <label style={{ ...lbl, marginTop: 16 }}>Category *</label>
-              <select style={inp} value={nf.cat} onChange={e => setNf(p => ({ ...p, cat: e.target.value }))}>
+              <label style={{ ...lbl, marginTop: 18 }}>Category</label>
+              <select style={{ ...inp, appearance: "none" }} value={nf.cat} onChange={e => setNf(p => ({ ...p, cat: e.target.value }))}>
                 {CATEGORIES.map(c => <option key={c}>{c}</option>)}
               </select>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 18 }}>
                 <div>
                   <label style={lbl}>Deadline (IST) *</label>
                   <input style={inp} type="datetime-local" value={nf.dl} onChange={e => setNf(p => ({ ...p, dl: e.target.value }))} />
                 </div>
                 <div>
-                  <label style={lbl}>Reward (INR) *</label>
+                  <label style={lbl}>Reward (₹) *</label>
                   <input style={inp} type="number" min="1" placeholder="50" value={nf.reward} onChange={e => setNf(p => ({ ...p, reward: e.target.value }))} />
                 </div>
               </div>
 
-              <label style={{ ...lbl, marginTop: 16 }}>Location</label>
-              <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              <label style={{ ...lbl, marginTop: 18 }}>Location</label>
+              <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
                 {["Remote", "On-Site"].map(lt => (
-                  <button key={lt} onClick={() => setNf(p => ({ ...p, locType: lt }))} style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: `1.5px solid ${nf.locType === lt ? "#6c47ff" : "#ddd"}`, background: nf.locType === lt ? "#ede9fe" : "#fff", color: nf.locType === lt ? "#6c47ff" : "#666", fontWeight: nf.locType === lt ? 600 : 400, fontSize: 13, cursor: "pointer" }}>
-                    {lt}
-                  </button>
+                  <button key={lt} onClick={() => setNf(p => ({ ...p, locType: lt }))} style={{
+                    flex: 1, padding: "9px 0", borderRadius: 9,
+                    border: `1px solid ${nf.locType === lt ? C.accentBorder : C.border}`,
+                    background: nf.locType === lt ? C.accentBg : C.surfaceRaise,
+                    color: nf.locType === lt ? C.accent : C.textMuted,
+                    fontWeight: nf.locType === lt ? 600 : 400,
+                    fontSize: 13, cursor: "pointer", fontFamily: "inherit",
+                  }}>{lt}</button>
                 ))}
               </div>
+
               {nf.locType === "On-Site" && (
-                <div>
+                <div style={{ marginBottom: 14 }}>
                   <label style={lbl}>Campus Spot</label>
-                  <select style={inp} value={nf.spot} onChange={e => setNf(p => ({ ...p, spot: e.target.value }))}>
+                  <select style={{ ...inp, appearance: "none" }} value={nf.spot} onChange={e => setNf(p => ({ ...p, spot: e.target.value }))}>
                     {CAMPUS_SPOTS.map(s => <option key={s}>{s}</option>)}
-                    <option value="Other">Other (specify below)</option>
+                    <option value="Other">Other</option>
                   </select>
-                  {nf.spot === "Other" && <input style={{ ...inp, marginTop: 8 }} placeholder="Describe the location" value={nf.custom} onChange={e => setNf(p => ({ ...p, custom: e.target.value }))} />}
+                  {nf.spot === "Other" && (
+                    <input style={{ ...inp, marginTop: 8 }} placeholder="Describe location"
+                      value={nf.custom} onChange={e => setNf(p => ({ ...p, custom: e.target.value }))} />
+                  )}
                 </div>
               )}
 
-              <label style={{ display: "flex", gap: 10, alignItems: "center", cursor: "pointer", marginTop: 16 }}>
-                <input type="checkbox" checked={nf.gs} onChange={e => setNf(p => ({ ...p, gs: e.target.checked }))} style={{ accentColor: "#6c47ff", width: 16, height: 16 }} />
-                <span style={{ fontSize: 13, color: "#555" }}>Mark as Gender-Sensitive Task</span>
+              <label style={{ display: "flex", gap: 10, alignItems: "center", cursor: "pointer", marginTop: 14 }}>
+                <input type="checkbox" checked={nf.gs} onChange={e => setNf(p => ({ ...p, gs: e.target.checked }))}
+                  style={{ accentColor: C.accent, width: 15, height: 15 }} />
+                <span style={{ fontSize: 13, color: C.textMuted }}>Mark as Gender-Sensitive</span>
               </label>
 
-              <button onClick={handlePost} style={{ width: "100%", marginTop: 20, padding: "13px 0", borderRadius: 10, border: "none", background: "#6c47ff", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Post Task</button>
+              <PrimaryBtn onClick={handlePost} style={{ width: "100%", marginTop: 22 }}>Post Task →</PrimaryBtn>
             </div>
           </div>
         )}
 
-        {/* ON IT */}
         {tab === "on_it" && profile && (
           <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Available Tasks</h2>
-              <span style={{ fontSize: 12, color: "#888" }}>{avail.length} task{avail.length !== 1 ? "s" : ""}</span>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 18 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: "-0.4px" }}>Browse Tasks</h2>
+              <span style={{ fontSize: 12, color: C.textFaint }}>{avail.length} available</span>
             </div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+
+            <div style={{ display: "flex", gap: 7, marginBottom: 18, flexWrap: "wrap", alignItems: "center" }}>
               {["All", "Remote", "On-Site"].map(f => (
-                <button key={f} onClick={() => setFilter(f)} style={{ padding: "6px 14px", borderRadius: 20, border: `1.5px solid ${filter === f ? "#6c47ff" : "#ddd"}`, background: filter === f ? "#ede9fe" : "#fff", color: filter === f ? "#6c47ff" : "#666", fontSize: 13, fontWeight: filter === f ? 600 : 400, cursor: "pointer" }}>{f}</button>
+                <FilterChip key={f} label={f} active={filter === f} onClick={() => setFilter(f)} />
               ))}
-              <button onClick={() => setSortP(p => !p)} style={{ padding: "6px 14px", borderRadius: 20, border: `1.5px solid ${sortP ? "#059669" : "#ddd"}`, background: sortP ? "#ecfdf5" : "#fff", color: sortP ? "#059669" : "#666", fontSize: 13, fontWeight: sortP ? 600 : 400, cursor: "pointer", marginLeft: "auto" }}>
-                {sortP ? "Price: Low to High" : "Sort by Price"}
-              </button>
+              <FilterChip label="↑ Price" active={sortP} onClick={() => setSortP(p => !p)}
+                activeColor={C.green} activeBg={C.greenBg} activeBorder={C.greenBorder} />
             </div>
-            {avail.length === 0
-              ? <div style={{ textAlign: "center", padding: "56px 0", color: "#bbb" }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 12, background: "#f0eeff", margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <div style={{ width: 24, height: 3, background: "#c4b5fd", borderRadius: 2 }} />
-                  </div>
-                  <p style={{ margin: 0, fontSize: 14, color: "#888" }}>No tasks available right now</p>
-                  <p style={{ margin: "4px 0 0", fontSize: 12, color: "#bbb" }}>Switch to Need It to post one</p>
-                </div>
-              : <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {avail.map(t => <TaskCard key={t.id} task={t} profile={profile} onAccept={acceptTask} onDeny={denyTask} />)}
-                </div>}
+
+            {avail.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "64px 0" }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: 12, background: C.surfaceRaise,
+                  border: `1px solid ${C.border}`, margin: "0 auto 18px",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 20, color: C.textFaint
+                }}>—</div>
+                <p style={{ margin: 0, fontSize: 14, color: C.textMuted }}>No tasks available</p>
+                <p style={{ margin: "5px 0 0", fontSize: 13, color: C.textFaint }}>Post one in the Post tab</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {avail.map(t => <TaskCard key={t.id} task={t} profile={profile} onAccept={acceptTask} onDeny={denyTask} />)}
+              </div>
+            )}
           </div>
         )}
 
-        {/* PROFILE */}
         {tab === "profile" && profile && (
           <div>
-            <div style={{ ...card, marginBottom: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#ede9fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: "#6c47ff" }}>{profile.name[0].toUpperCase()}</div>
+            <div style={{ ...cardStyle, marginBottom: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
+                <div style={{
+                  width: 46, height: 46, borderRadius: "50%",
+                  background: C.accentBg, border: `1.5px solid ${C.accentBorder}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 18, fontWeight: 700, color: C.accent
+                }}>{profile.name[0].toUpperCase()}</div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 18 }}>{profile.name}</div>
-                  <div style={{ fontSize: 12, color: "#888" }}>Member since {fmtIST(profile.joinedAt)}</div>
+                  <div style={{ fontWeight: 600, fontSize: 16, letterSpacing: "-0.3px" }}>{profile.name}</div>
+                  <div style={{ fontSize: 12, color: C.textFaint, marginTop: 2 }}>Since {fmtIST(profile.joinedAt)}</div>
                 </div>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: profile.trustScore >= 70 ? "#059669" : profile.trustScore >= 40 ? "#d97706" : "#dc2626" }}>{profile.trustScore}</div>
-                  <div style={{ fontSize: 11, color: "#888" }}>Trust Score</div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 26, fontWeight: 700, color: trustColor, letterSpacing: "-1px" }}>{profile.trustScore}</div>
+                  <div style={{ fontSize: 10, color: C.textFaint, textTransform: "uppercase", letterSpacing: "0.07em" }}>Trust</div>
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 16 }}>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
                 {[
                   ["Posted", myPosted.length],
-                  ["In Progress", myDoing.length],
-                  ["Completed", tasks.filter(t => t.assignedTo === profile.name && t.status === "Done").length]
+                  ["Active", myDoing.length],
+                  ["Done",   tasks.filter(t => t.assignedTo === profile.name && t.status === "Done").length]
                 ].map(([l, v]) => (
-                  <div key={l} style={{ background: "#f8f7f4", borderRadius: 10, padding: "10px 8px", textAlign: "center" }}>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: "#6c47ff" }}>{v}</div>
-                    <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>{l}</div>
+                  <div key={l} style={{
+                    background: C.surfaceRaise, borderRadius: 10, padding: "12px 8px",
+                    textAlign: "center", border: `1px solid ${C.border}`
+                  }}>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: C.accent, letterSpacing: "-1px" }}>{v}</div>
+                    <div style={{ fontSize: 10, color: C.textFaint, marginTop: 3, textTransform: "uppercase", letterSpacing: "0.07em" }}>{l}</div>
                   </div>
                 ))}
               </div>
             </div>
 
             {myDoing.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <h3 style={{ fontSize: 13, fontWeight: 600, color: "#888", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 10px" }}>Tasks I'm Doing</h3>
+              <Section title="Tasks I'm doing">
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {myDoing.map(t => (
-                    <div key={t.id} style={{ ...card, padding: "14px 16px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+                    <div key={t.id} style={{ ...cardStyle, padding: "14px 16px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 4 }}>{t.title}</div>
-                          <div style={{ fontSize: 12, color: "#888" }}>Posted by {t.postedBy} &middot; Due {fmtIST(t.deadline)}</div>
-                          {isLate(t.deadline) && <div style={{ fontSize: 11, color: "#dc2626", marginTop: 4, fontWeight: 500 }}>Deadline passed — 50% penalty applies</div>}
+                          <div style={{ fontWeight: 550, fontSize: 14, marginBottom: 3 }}>{t.title}</div>
+                          <div style={{ fontSize: 12, color: C.textFaint }}>by {t.postedBy} · Due {fmtIST(t.deadline)}</div>
+                          {isLate(t.deadline) && <div style={{ fontSize: 11, color: C.red, marginTop: 5, fontWeight: 500 }}>Overdue — 50% penalty</div>}
                         </div>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: "#6c47ff" }}>&#8377;{t.reward}</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: C.accent }}>₹{t.reward}</div>
                       </div>
-                      <button onClick={() => setModal(t)} style={{ width: "100%", padding: "8px 0", borderRadius: 8, background: isLate(t.deadline) ? "#fef2f2" : "#ecfdf5", border: `1.5px solid ${isLate(t.deadline) ? "#fca5a5" : "#6ee7b7"}`, color: isLate(t.deadline) ? "#dc2626" : "#059669", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
-                        {isLate(t.deadline) ? "Complete — Penalty Applies" : "Mark as Complete"}
+                      <button onClick={() => setModal(t)} style={{
+                        width: "100%", padding: "8px 0", borderRadius: 8, fontFamily: "inherit",
+                        background: isLate(t.deadline) ? C.redBg : C.greenBg,
+                        border: `1px solid ${isLate(t.deadline) ? C.redBorder : C.greenBorder}`,
+                        color: isLate(t.deadline) ? C.red : C.green,
+                        fontWeight: 550, fontSize: 13, cursor: "pointer"
+                      }}>
+                        {isLate(t.deadline) ? "Complete (penalty applies)" : "Mark complete"}
                       </button>
                     </div>
                   ))}
                 </div>
-              </div>
+              </Section>
             )}
 
             {myPosted.length > 0 && (
-              <div>
-                <h3 style={{ fontSize: 13, fontWeight: 600, color: "#888", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 10px" }}>Tasks I've Posted</h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <Section title="Tasks I've posted">
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {myPosted.map(t => (
-                    <div key={t.id} style={{ ...card, padding: "14px 16px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                    <div key={t.id} style={{ ...cardStyle, padding: "13px 16px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 500, fontSize: 14 }}>{t.title}</div>
-                          <div style={{ fontSize: 12, color: "#888", marginTop: 3 }}>Due {fmtIST(t.deadline)}</div>
-                          {t.assignedTo && t.status === "In Progress" && <div style={{ fontSize: 11, color: "#059669", marginTop: 4, fontWeight: 500 }}>Accepted by {t.assignedTo}</div>}
-                          {t.status === "Denied" && <div style={{ fontSize: 11, color: "#dc2626", marginTop: 4 }}>Denied by a user</div>}
-                          {t.status === "Done" && t.late && <div style={{ fontSize: 11, color: "#dc2626", marginTop: 4 }}>Late — penalty &#8377;{t.penalty?.toFixed(2)} deducted</div>}
+                          <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 3 }}>{t.title}</div>
+                          <div style={{ fontSize: 12, color: C.textFaint }}>Due {fmtIST(t.deadline)}</div>
+                          {t.assignedTo && t.status === "In Progress" && <div style={{ fontSize: 11, color: C.green, marginTop: 4, fontWeight: 500 }}>Accepted by {t.assignedTo}</div>}
+                          {t.status === "Denied" && <div style={{ fontSize: 11, color: C.red, marginTop: 4 }}>Declined by a user</div>}
+                          {t.status === "Done" && t.late && <div style={{ fontSize: 11, color: C.red, marginTop: 4 }}>Late · ₹{t.penalty?.toFixed(2)} penalty</div>}
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-                          <span style={{ fontSize: 15, fontWeight: 700, color: "#6c47ff" }}>&#8377;{t.reward}</span>
-                          <StatusBadge status={t.status} />
+                          <span style={{ fontSize: 14, fontWeight: 700, color: C.accent }}>₹{t.reward}</span>
+                          <StatusDot status={t.status} />
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
+              </Section>
             )}
 
             {myPosted.length === 0 && myDoing.length === 0 && (
-              <div style={{ textAlign: "center", padding: "40px 0", color: "#bbb" }}>
-                <p style={{ margin: 0, fontSize: 14, color: "#888" }}>No activity yet</p>
-                <p style={{ margin: "4px 0 0", fontSize: 12 }}>Post or accept tasks to get started</p>
+              <div style={{ textAlign: "center", padding: "52px 0" }}>
+                <p style={{ margin: 0, fontSize: 14, color: C.textMuted }}>No activity yet</p>
+                <p style={{ margin: "5px 0 0", fontSize: 13, color: C.textFaint }}>Post or accept tasks to get started</p>
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* COMPLETE MODAL */}
       {modal && (
-        <div onClick={e => e.target === e.currentTarget && setModal(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 100 }}>
-          <div style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: 24, width: "100%", maxWidth: 480, margin: "0 auto", boxSizing: "border-box" }}>
-            <div style={{ width: 40, height: 4, background: "#ddd", borderRadius: 2, margin: "0 auto 20px" }} />
-            <h3 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 16px" }}>Complete Task</h3>
-            <div style={{ background: "#f8f7f4", borderRadius: 10, padding: 14, marginBottom: 16 }}>
-              <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 6 }}>{modal.title}</div>
-              <div style={{ fontSize: 12, color: "#888" }}>Deadline: {fmtIST(modal.deadline)}</div>
-              <div style={{ fontSize: 12, color: "#888" }}>Full Reward: &#8377;{modal.reward}</div>
+        <div onClick={e => e.target === e.currentTarget && setModal(null)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "flex-end", zIndex: 100 }}>
+          <div style={{
+            background: C.surface, borderRadius: "20px 20px 0 0",
+            padding: "24px 24px 36px", width: "100%", maxWidth: 480,
+            margin: "0 auto", boxSizing: "border-box",
+            borderTop: `1px solid ${C.borderBright}`,
+          }}>
+            <div style={{ width: 36, height: 4, background: C.border, borderRadius: 2, margin: "0 auto 22px" }} />
+            <div style={{ fontSize: 16, fontWeight: 650, marginBottom: 16 }}>Complete Task</div>
+
+            <div style={{ background: C.surfaceRaise, borderRadius: 10, padding: "13px 16px", marginBottom: 16, border: `1px solid ${C.border}` }}>
+              <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 5 }}>{modal.title}</div>
+              <div style={{ fontSize: 12, color: C.textFaint }}>Deadline: {fmtIST(modal.deadline)}</div>
+              <div style={{ fontSize: 12, color: C.textFaint }}>Full reward: ₹{modal.reward}</div>
             </div>
+
             {isLate(modal.deadline) ? (
-              <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 10, padding: 14, marginBottom: 20 }}>
-                <div style={{ fontWeight: 600, fontSize: 13, color: "#dc2626", marginBottom: 8 }}>Late Submission — 50% Penalty Applied</div>
-                <div style={{ fontSize: 13, color: "#7f1d1d", display: "flex", flexDirection: "column", gap: 4 }}>
-                  <div>Full reward: &#8377;{modal.reward}</div>
-                  <div>Penalty deduction (50%): &minus;&#8377;{(modal.reward * 0.5).toFixed(2)}</div>
-                  <div style={{ fontWeight: 700, marginTop: 4, fontSize: 14 }}>You will earn: &#8377;{(modal.reward * 0.5).toFixed(2)}</div>
+              <div style={{ background: C.redBg, border: `1px solid ${C.redBorder}`, borderRadius: 10, padding: "14px 16px", marginBottom: 20 }}>
+                <div style={{ fontWeight: 600, fontSize: 13, color: C.red, marginBottom: 8 }}>Late — 50% penalty</div>
+                <div style={{ fontSize: 13, color: C.red, display: "flex", flexDirection: "column", gap: 3, opacity: 0.85 }}>
+                  <div>Full reward: ₹{modal.reward}</div>
+                  <div>Penalty: −₹{(modal.reward * 0.5).toFixed(2)}</div>
+                  <div style={{ fontWeight: 700, marginTop: 6, fontSize: 15, opacity: 1 }}>You earn: ₹{(modal.reward * 0.5).toFixed(2)}</div>
                 </div>
               </div>
             ) : (
-              <div style={{ background: "#ecfdf5", border: "1px solid #6ee7b7", borderRadius: 10, padding: 14, marginBottom: 20 }}>
-                <div style={{ fontWeight: 600, fontSize: 13, color: "#059669", marginBottom: 4 }}>On Time — Full Reward Unlocked</div>
-                <div style={{ fontSize: 13, color: "#064e3b" }}>You will earn: <strong>&#8377;{modal.reward}</strong></div>
+              <div style={{ background: C.greenBg, border: `1px solid ${C.greenBorder}`, borderRadius: 10, padding: "14px 16px", marginBottom: 20 }}>
+                <div style={{ fontWeight: 600, fontSize: 13, color: C.green, marginBottom: 4 }}>On time — full reward</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.green }}>You earn: ₹{modal.reward}</div>
               </div>
             )}
+
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setModal(null)} style={{ flex: 1, padding: "11px 0", borderRadius: 10, border: "1.5px solid #ddd", background: "#fff", color: "#666", fontWeight: 500, fontSize: 14, cursor: "pointer" }}>Cancel</button>
-              <button onClick={() => completeTask(modal)} style={{ flex: 2, padding: "11px 0", borderRadius: 10, border: "none", background: "#6c47ff", color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>Confirm Completion</button>
+              <button onClick={() => setModal(null)} style={{
+                flex: 1, padding: "11px 0", borderRadius: 10,
+                border: `1px solid ${C.border}`, background: C.surfaceRaise,
+                color: C.textMuted, fontWeight: 500, fontSize: 14, cursor: "pointer", fontFamily: "inherit"
+              }}>Cancel</button>
+              <PrimaryBtn onClick={() => completeTask(modal)} style={{ flex: 2 }}>Confirm</PrimaryBtn>
             </div>
           </div>
         </div>
